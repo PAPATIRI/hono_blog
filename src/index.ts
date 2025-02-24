@@ -5,6 +5,12 @@ import { serveStatic } from "hono/serve-static";
 import { promises as fs } from "fs";
 import { join } from "path";
 import { checkDatabaseConnection } from "./db";
+import { authRoutes } from "./routes/auth";
+import { publicRoutes } from "./routes";
+import { authenticated } from "./middleware/auth";
+import { userRoutes } from "./routes/user";
+import { adminRoutes } from "./routes/admin";
+import { writerRoutes } from "./routes/writer";
 
 const app = new Hono();
 
@@ -26,21 +32,24 @@ app.use(
     },
   })
 );
+app.use("/admin/*", authenticated);
+app.use("/user/*", authenticated);
+app.use("/writer/*", authenticated);
 
-app.get("/", (c) => {
-  return c.text("Hello Hono!");
-});
+app.route("/auth", authRoutes);
+app.route("/", publicRoutes);
+app.route("/user", userRoutes);
+app.route("/admin", adminRoutes);
+app.route("/writer", writerRoutes);
 
 app.onError((err, c) => {
   console.error("App error", err);
   return c.text("something went wrong", 500);
 });
-// Initialize the app
+
 const init = async () => {
-  // Check database connection
   await checkDatabaseConnection();
 
-  // Start the server
   const port = process.env.PORT || 3000;
   console.log(`🚀 Server is running on http://localhost:${port}`);
 };
